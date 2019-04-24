@@ -1,25 +1,36 @@
 library(janitor)
 library(shiny)
+library(shinythemes)
 library(tidyverse)
 
-ui <- fluidPage(
-   
-   titlePanel(
-     textOutput("destTitle")
-   ),
-   
-   sidebarLayout(position = "right",
-      sidebarPanel(
-         selectInput("dest",
-                     "Destination Country:",
-                     choices = unique(asylum_status$dest),
-                     selected = "France")
-      ),
-      
-      mainPanel(
-         plotOutput("destPlot")
-      )
+ui <- shinyUI(
+  navbarPage("Asylum Applicants",
+             theme = shinytheme("flatly"),
+#--------------------------------------------
+     tabPanel("Rejections",
+              titlePanel(
+       textOutput("destTitle")
+              ),
+              
+              sidebarLayout(position = "right",
+                            sidebarPanel(
+                              selectInput("dest",
+                                          "Destination Country:",
+                                          choices = unique(asylum_status$dest),
+                                          selected = "France")
+                            ),
+                            
+                            mainPanel(
+                              plotOutput("destPlot")
+                            )
+              )
+     ),
+#--------------------------------------------
+      tabPanel("Acceptances")
+
+
    )
+   
 )
 
 server <- function(input, output) {
@@ -32,7 +43,7 @@ server <- function(input, output) {
         filter(dest == input$dest)
       
       ggplot(dest_status) +
-        geom_col(aes(x = year, y = rejected)) +
+        geom_col(aes(x = year, y = rejected, fill = year)) +
         labs(
           y = "Number of Rejections",
           x = ""
