@@ -4,6 +4,8 @@ library(shinythemes)
 library(leaflet)
 library(maps)
 library(sf)
+library(fs)
+library(shinyBS)
 library(tidyverse)
 
 # The asylum status data from the UNHCR's popstat database provides annual
@@ -136,8 +138,15 @@ all_capitals <- world.cities %>%
 ui <- shinyUI(
   navbarPage("Asylum Applicants",
              theme = shinytheme("flatly"),
+             position = "static-top",
 #--------------------------------------------
      tabPanel("Rejections",
+              bsModal(
+                id = "tutorialModal",
+                title = "Tutorial!",
+                trigger = "",
+                textOutput("tutorial")
+              ),
               titlePanel(
        textOutput("destTitle")
               ),
@@ -192,7 +201,19 @@ navbarMenu("Countries",
    
 )
 
-server <- function(input, output) {
+#--------------------------------------------
+#--------------------------------------------
+#---------------SERVER-----------------------
+#--------------------------------------------
+#--------------------------------------------
+
+server <- function(input, output, session) {
+  toggleModal(session, "tutorialModal", toggle = "open")
+  
+  output$tutorial <- renderText({
+    "This is an introduction to the app. It tells you things you might want to know. Like did you know that kangaroos can jump 15 feet? That's crazy. Actually I think I made that one up, but it'll tell you cool stuff that's also real soon. 🍊"
+  })
+#--------------------------------------------
    output$destTitle <- renderText({
      paste("Number of Asylum Applications Rejected by ", input$dest)
    }) 
