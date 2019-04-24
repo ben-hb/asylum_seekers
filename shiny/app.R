@@ -29,9 +29,12 @@ ui <- shinyUI(
       tabPanel("Acceptances"),
 navbarMenu("Countries",
            tabPanel("Origin",
+                    titlePanel(
+                      textOutput("originTitle")
+                    ),
                     sidebarLayout(position = "right",
                                   sidebarPanel(
-                                    selectInput("year_dest",
+                                    selectInput("year_origin",
                                                 "Year:",
                                                 choices = 2000:2017,
                                                 selected = 2014)
@@ -50,7 +53,7 @@ server <- function(input, output) {
    output$destTitle <- renderText({
      paste("Number of Asylum Applications Rejected by ", input$dest)
    }) 
-  
+#--------------------------------------------
    output$destPlot <- renderPlot({
       dest_status <- asylum_status_gathered %>% 
         filter(dest == input$dest)
@@ -61,6 +64,10 @@ server <- function(input, output) {
           y = "Number of Rejections",
           x = ""
         )
+   })
+#--------------------------------------------
+   output$originTitle <- renderText({
+     paste("Volume of Asylum Applicants Leaving Countries in ", input$year_origin)
    })
 }
 
