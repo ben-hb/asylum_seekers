@@ -26,8 +26,11 @@ ui <- shinyUI(
               )
      ),
 #--------------------------------------------
-      tabPanel("Acceptances")
-
+      tabPanel("Acceptances"),
+navbarMenu("Countries",
+           tabPanel("A"),
+           tabPanel("B"))
+#--------------------------------------------
 
    )
    
@@ -39,11 +42,11 @@ server <- function(input, output) {
    }) 
   
    output$destPlot <- renderPlot({
-      dest_status <- asylum_status %>% 
+      dest_status <- asylum_status_gathered %>% 
         filter(dest == input$dest)
       
       ggplot(dest_status) +
-        geom_col(aes(x = year, y = rejected, fill = year)) +
+        geom_col(aes(x = year, y = value, fill = factor(decision))) +
         labs(
           y = "Number of Rejections",
           x = ""

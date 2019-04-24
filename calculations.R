@@ -29,13 +29,16 @@ asylum_status <- read_csv("http://popstats.unhcr.org/en/asylum_seekers.csv",
                           )) %>% 
   clean_names() %>% 
   rename("dest" = "country_territory_of_asylum_residence",
-         "recognized" = "statistics_filter_decisions_recognized") 
+         "recognized" = "statistics_filter_decisions_recognized") %>% 
+  filter(!is.na(origin)) %>% 
+  filter(!is.na(dest),
+         !origin %in% c("Curaçao", "Holy See (the)"))
 
 asylum_status$origin  <- fct_recode(asylum_status$origin, 
                                     Bolivia = "Bolivia (Plurinational State of)",
                                     Brunei = "Brunei Darussalam",
                                     `Central African Republic` = "Central African Rep.",
-                                    `Côte d'Ivoire` = "Ivory Coast",
+                                    `Ivory Coast` = "Côte d'Ivoire",
                                     `Democratic Republic of the Congo` = "Dem. Rep. of the Congo",
                                     `Cape Verde` = "Cabo Verde",
                                     `Czech Republic` = "Czech Rep.",
@@ -50,15 +53,18 @@ asylum_status$origin  <- fct_recode(asylum_status$origin,
                                     `North Korea` = "Dem. People's Rep. of Korea",
                                     Palestine = "Palestinian",
                                     Russia = "Russian Federation",
-                                    `Serbia and Montenegro` = "Serbia and Kosovo (S/RES/1244 (1999)",
+                                    `Serbia and Montenegro` = "Serbia and Kosovo (S/RES/1244 (1999))",
                                     Syria = "Syrian Arab Rep.",
                                     `East Timor` = "Timor-Leste",
                                     Tanzania = "United Rep. of Tanzania",
                                     Venezuela = "Venezuela (Bolivarian Republic of)",
                                     Vietnam = "Viet Nam",
                                     NULL = "Stateless",
-                                    NULL = "Various/Unknown"
-                                    )
+                                    NULL = "Various/Unknown",
+                                    `Democratic Republic of the Congo` = "Congo",
+                                    Micronesia = "Micronesia (Federated States of)",
+                                    `Serbia and Montenegro` = "Montenegro",
+                                    `Saint Pierre and Miquelon` = "Saint-Pierre-et-Miquelon")
 
 
   
@@ -93,7 +99,8 @@ asylum_status_gathered$decision <- factor(asylum_status_gathered$decision,
 
 data(world.cities)
 
-world.cities$country.etc <- fct_recode(`United Kingdom` = "UK",
+world.cities$country.etc <- fct_recode(world.cities$country.etc,
+                                       `United Kingdom` = "UK",
                                        `Democratic Republic of the Congo` = "Congo",
                                        `South Korea` = "Korea South",
                                        `North Korea` = "Korea North",
