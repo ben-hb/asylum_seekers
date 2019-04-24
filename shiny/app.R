@@ -28,8 +28,18 @@ ui <- shinyUI(
 #--------------------------------------------
       tabPanel("Acceptances"),
 navbarMenu("Countries",
-           tabPanel("A"),
-           tabPanel("B"))
+           tabPanel("Origin",
+                    sidebarLayout(position = "right",
+                                  sidebarPanel(
+                                    selectInput("year_dest",
+                                                "Year:",
+                                                choices = 2000:2017,
+                                                selected = 2014)
+                                  ),
+                                  mainPanel(
+                                    
+                                  ))),
+           tabPanel("Destination"))
 #--------------------------------------------
 
    )

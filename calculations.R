@@ -114,11 +114,19 @@ all_capitals <- world.cities %>%
   rename("country" = "country.etc") %>% 
   select(country, long, lat)
 
-geo_status <- asylum_status %>% 
-  anti_join(all_capitals,
+status_origin <- asylum_status %>% 
+  group_by(origin) %>% 
+  summarize(total = sum(total_decisions, na.rm = TRUE))
+
+geo_status_origin <- status_origin %>% 
+  left_join(all_capitals,
             by = c("origin" = "country"))
 
 sf_status <- st_as_sf(geo_status,
                       coords = c("long", "lat"),
                       crs = 4326)
 
+leaflet() %>% 
+  addProviderTiles(providers$Esri.WorldStreetMap) %>% 
+  addCircles(data = geo_status_origin,
+             weight = log(geo_status_origin$total))
