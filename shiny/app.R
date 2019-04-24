@@ -30,7 +30,7 @@ ui <- shinyUI(
 navbarMenu("Countries",
            tabPanel("Origin",
                     titlePanel(
-                      textOutput("originTitle")
+                      textOutput("originmapTitle")
                     ),
                     sidebarLayout(position = "right",
                                   sidebarPanel(
@@ -42,7 +42,20 @@ navbarMenu("Countries",
                                   mainPanel(
                                     
                                   ))),
-           tabPanel("Destination"))
+           tabPanel("Destination",
+                    titlePanel(
+                      textOutput("destmapTitle")
+                    ),
+                    sidebarLayout(position = "right",
+                                  sidebarPanel(
+                                    selectInput("year_dest",
+                                                "Year:",
+                                                choices = 2000:2017,
+                                                selected = 2014)
+                                  ),
+                                  mainPanel(
+                                    
+                                  ))))
 #--------------------------------------------
 
    )
@@ -66,8 +79,12 @@ server <- function(input, output) {
         )
    })
 #--------------------------------------------
-   output$originTitle <- renderText({
+   output$originmapTitle <- renderText({
      paste("Volume of Asylum Applicants Leaving Countries in ", input$year_origin)
+   })
+#--------------------------------------------
+   output$destmapTitle <- renderText({
+     paste("Volume of Asylum Applicants Leaving Countries in ", input$year_dest)
    })
 }
 
