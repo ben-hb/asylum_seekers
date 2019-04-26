@@ -5,6 +5,7 @@ library(leaflet)
 library(maps)
 library(sf)
 library(fs)
+library(lubridate)
 library(shinyBS)
 library(tidyverse)
 
@@ -13,7 +14,12 @@ library(tidyverse)
 
 # Asylum Status Reading
 #--------------------------------------------
-asylum_status <- read_csv("http://popstats.unhcr.org/en/asylum_seekers.csv",
+
+# CSV downloaded from "http://popstats.unhcr.org/en/asylum_seekers.csv" I opt to
+# read from a local file to decrease render time, however for those wishing to
+# rerun this locally you can simply replace the local directory with the url
+
+asylum_status <- read_csv("asylum_seekers.csv",
                           skip = 3,
                           col_types = cols(
                             Year = col_double(),
@@ -99,7 +105,12 @@ asylum_status$dest  <- fct_recode(asylum_status$dest,
 # Asylum Monthly Reading
 #--------------------------------------------
 
-asylum_monthly <- read_csv("http://popstats.unhcr.org/en/asylum_seekers_monthly.csv",
+# CSV downloaded from http://popstats.unhcr.org/en/asylum_seekers_monthly.csv I
+# opt to read from a local file to decrease render time, however for those
+# wishing to rerun this locally you can simply replace the local directory with
+# the url
+
+asylum_monthly <- read_csv("asylum_seekers_monthly.csv",
                            skip = 3,
                            col_types = cols(
                              `Country / territory of asylum/residence` = col_character(),
@@ -112,7 +123,9 @@ asylum_monthly <- read_csv("http://popstats.unhcr.org/en/asylum_seekers_monthly.
   rename("dest" = "country_territory_of_asylum_residence") %>% 
   filter(!is.na(origin)) %>% 
   filter(!is.na(dest),
-         !origin %in% c("Curaçao", "Holy See (the)")) %>% 
+         !origin %in% c("Curaçao", "Holy See (the)"))
+
+asylum_monthly <- asylum_monthly %>% 
   mutate(date = ymd(paste(asylum_monthly$year, asylum_monthly$month, "1")))
 
 # Bar Plot Processing
@@ -199,7 +212,7 @@ ui <- shinyUI(
                                            selected = "Afghanistan")
                              ),
                              mainPanel(
-                               
+                               plotOutput("acceptancePlot")
                              ))),
 navbarMenu("Countries",
            tabPanel("Origin",
@@ -264,6 +277,15 @@ server <- function(input, output, session) {
           x = ""
         )
    })
+#--------------------------------------------
+  output$acceptancePlot <- renderPlot({
+    asylum_monthly_accept <- asylum_monthly %>% 
+      filter(origin == input$originaccept,
+             dest == input$destaccept)
+    
+    ggplot(asylum_monthly_accept) +
+      geom_point(aes(x = date, y = value))
+  })
 #--------------------------------------------
    output$originmapTitle <- renderText({
      paste("Volume of Asylum Applicants Leaving Countries in ", input$year_origin)
