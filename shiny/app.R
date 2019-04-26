@@ -11,6 +11,8 @@ library(tidyverse)
 # The asylum status data from the UNHCR's popstat database provides annual
 # information on the status of asylum-seeker applications
 
+# Asylum Status Reading
+#--------------------------------------------
 asylum_status <- read_csv("http://popstats.unhcr.org/en/asylum_seekers.csv",
                           skip = 3,
                           col_types = cols(
@@ -94,6 +96,25 @@ asylum_status$dest  <- fct_recode(asylum_status$dest,
                                     Micronesia = "Micronesia (Federated States of)",
                                     `Serbia and Montenegro` = "Montenegro")
 
+# Asylum Monthly Reading
+#--------------------------------------------
+
+asylum_monthly <- read_csv("http://popstats.unhcr.org/en/asylum_seekers_monthly.csv",
+                           skip = 3,
+                           col_types = cols(
+                             `Country / territory of asylum/residence` = col_character(),
+                             Origin = col_character(),
+                             Year = col_double(),
+                             Month = col_character(),
+                             Value = col_double()
+                           )) %>% 
+  clean_names() %>% 
+  rename("dest" = "country_territory_of_asylum_residence") %>% 
+  filter(!is.na(origin)) %>% 
+  filter(!is.na(dest),
+         !origin %in% c("Curaçao", "Holy See (the)")) %>% 
+  mutate(date = ymd(paste(asylum_monthly$year, asylum_monthly$month, "1")))
+
 # Bar Plot Processing
 #--------------------------------------------
 asylum_status_gathered <- gather(asylum_status,
@@ -156,7 +177,7 @@ ui <- shinyUI(
                               selectInput("dest",
                                           "Destination Country:",
                                           choices = sort(unique(asylum_status$dest)),
-                                          selected = "France")
+                                          selected = "Argentina")
                             ),
                             
                             mainPanel(
@@ -165,7 +186,21 @@ ui <- shinyUI(
               )
      ),
 #--------------------------------------------
-      tabPanel("Acceptances"),
+      tabPanel("Acceptances",
+               sidebarLayout(position = "right",
+                             sidebarPanel(
+                               selectInput("dest_accept",
+                                           "Destination Country:",
+                                           choices = sort(unique(asylum_monthly$dest)),
+                                           selected = "United States of America"),
+                               selectInput("origin_accept",
+                                           "Origin Country:",
+                                           choices = sort(unique(asylum_monthly$origin)),
+                                           selected = "Afghanistan")
+                             ),
+                             mainPanel(
+                               
+                             ))),
 navbarMenu("Countries",
            tabPanel("Origin",
                     titlePanel(
@@ -249,6 +284,8 @@ server <- function(input, output, session) {
        addCircles(data = geo_status_origin,
                   weight = log(geo_status_origin$total))
    })
+  
+
 #--------------------------------------------
    output$destmapTitle <- renderText({
      paste("Volume of Asylum Applicants Entering Countries in ", input$year_dest)

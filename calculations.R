@@ -2,6 +2,7 @@
 # visualizations outside of the Shiny file to allow for an easy transfer after
 library(leaflet)
 library(maps)
+library(lubridate)
 library(janitor)
 library(sf)
 library(tidyverse)
@@ -82,7 +83,11 @@ asylum_monthly <- read_csv("http://popstats.unhcr.org/en/asylum_seekers_monthly.
                              Value = col_double()
                            )) %>% 
   clean_names() %>% 
-  rename("dest" = "country_territory_of_asylum_residence")
+  rename("dest" = "country_territory_of_asylum_residence") %>% 
+  filter(!is.na(origin)) %>% 
+  filter(!is.na(dest),
+         !origin %in% c("Curaçao", "Holy See (the)")) %>% 
+  mutate(date = ymd(paste(asylum_monthly$year, asylum_monthly$month, "1")))
 
 asylum_status_gathered <- gather(asylum_status,
                                  "recognized",
