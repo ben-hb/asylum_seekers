@@ -174,10 +174,10 @@ ui <- shinyUI(
              theme = shinytheme("flatly"),
              position = "static-top",
 #--------------------------------------------
-     tabPanel("Rejections",
+     tabPanel("Decisions",
               bsModal(
                 id = "tutorialModal",
-                title = "Tutorial!",
+                title = "Welcome to the Asylum Applicant Visualization Tool",
                 trigger = "",
                 textOutput("tutorial")
               ),
@@ -199,22 +199,22 @@ ui <- shinyUI(
               )
      ),
 #--------------------------------------------
-      tabPanel("Acceptances",
-               sidebarLayout(position = "right",
-                             sidebarPanel(
-                               selectInput("dest_accept",
-                                           "Destination Country:",
-                                           choices = sort(unique(asylum_monthly$dest)),
-                                           selected = "United States of America"),
-                               selectInput("origin_accept",
-                                           "Origin Country:",
-                                           choices = sort(unique(asylum_monthly$origin)),
-                                           selected = "Afghanistan")
-                             ),
-                             mainPanel(
-                               plotOutput("acceptancePlot")
-                             ))),
-navbarMenu("Countries",
+      # tabPanel("Acceptances",
+      #          sidebarLayout(position = "right",
+      #                        sidebarPanel(
+      #                          selectInput("dest_accept",
+      #                                      "Destination Country:",
+      #                                      choices = sort(unique(asylum_monthly$dest)),
+      #                                      selected = "United States of America"),
+      #                          selectInput("origin_accept",
+      #                                      "Origin Country:",
+      #                                      choices = sort(unique(asylum_monthly$origin)),
+      #                                      selected = "Afghanistan")
+      #                        ),
+      #                        mainPanel(
+      #                          plotOutput("acceptancePlot")
+      #                        ))),
+navbarMenu("Application Maps",
            tabPanel("Origin",
                     titlePanel(
                       textOutput("originmapTitle")
@@ -259,11 +259,13 @@ server <- function(input, output, session) {
   toggleModal(session, "tutorialModal", toggle = "open")
   
   output$tutorial <- renderText({
-    "This is an introduction to the app. It tells you things you might want to know. Like did you know that kangaroos can jump 15 feet? That's crazy. Actually I think I made that one up, but it'll tell you cool stuff that's also real soon. 🍊"
+    "In theory, political asylum is designed to function as a way to seek refuge from oppressive governments by moving to more welcoming governments. In reality, applicants often are challenged to find a country willing to accpet them. This tool is designed to shine light upon the sources of asylum applicants and the countries they choose to go to, and how easy that process is. You'll find graphics that show how likely governments are to accept asylum applicants, where asylum applicants tend to come from, and where they tend to go. All of the data is sourced from the UN High Commissioner on Refugees, a big thanks to their team for curating this data and making it publicly accessible. For the maps, size of dot correlates with number of applicants on a log scale. Labels with numbers of applicants for each country will be added shortly. 
+    
+    For those interested in the technical end of this program, you can check out the code here: https://github.com/ben-hb/asylum_seekers"
   })
 #--------------------------------------------
    output$destTitle <- renderText({
-     paste("Number of Asylum Applications Rejected by ", input$dest)
+     paste("Acceptance and Rejection of Asylum Applicants by ", input$dest)
    }) 
 #--------------------------------------------
    output$destPlot <- renderPlot({
@@ -274,8 +276,13 @@ server <- function(input, output, session) {
         geom_col(aes(x = year, y = value, fill = factor(decision))) +
         labs(
           y = "Number of Rejections",
-          x = ""
-        )
+          x = "Year",
+          rejected = "Rejected"
+        ) +
+        guides(fill=guide_legend(title=NULL)) +
+        scale_fill_discrete(name="Title",
+                            breaks=c("rejected", "recognized"),
+                            labels=c("Rejected", "Recognized"))
    })
 #--------------------------------------------
   output$acceptancePlot <- renderPlot({
@@ -284,18 +291,18 @@ server <- function(input, output, session) {
              dest == input$destaccept)
     
     ggplot(asylum_monthly_accept) +
-      geom_point(aes(x = date, y = value))
+      geom_col(aes(x = date, y = value))
   })
 #--------------------------------------------
    output$originmapTitle <- renderText({
-     paste("Volume of Asylum Applicants Leaving Countries in ", input$year_origin)
+     paste("Asylum Applicants Applying to Leave from each Country in", input$year_origin)
    })
 #--------------------------------------------
    output$originMap <- renderLeaflet({
      status_origin <- asylum_status %>% 
        filter(year == input$year_origin) %>% 
        group_by(origin) %>% 
-       summarize(total = sum(total_decisions, na.rm = TRUE))
+       summarize(total = sum(applied_during_year, na.rm = TRUE))
      
      geo_status_origin <- status_origin %>% 
        left_join(all_capitals,
@@ -310,14 +317,14 @@ server <- function(input, output, session) {
 
 #--------------------------------------------
    output$destmapTitle <- renderText({
-     paste("Volume of Asylum Applicants Entering Countries in ", input$year_dest)
+     paste("Asylum Applicants Entering Trying to Enter each Country in ", input$year_dest)
    })
 #--------------------------------------------
    output$destMap <- renderLeaflet({
      status_dest <- asylum_status %>% 
        filter(year == input$year_dest) %>% 
        group_by(dest) %>% 
-       summarize(total = sum(total_decisions, na.rm = TRUE))
+       summarize(total = sum(applied_during_year, na.rm = TRUE))
      
      geo_status_dest <- status_dest %>% 
        left_join(all_capitals,

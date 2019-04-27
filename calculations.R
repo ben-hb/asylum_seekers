@@ -86,7 +86,9 @@ asylum_monthly <- read_csv("http://popstats.unhcr.org/en/asylum_seekers_monthly.
   rename("dest" = "country_territory_of_asylum_residence") %>% 
   filter(!is.na(origin)) %>% 
   filter(!is.na(dest),
-         !origin %in% c("Curaçao", "Holy See (the)")) %>% 
+         !origin %in% c("Curaçao", "Holy See (the)")) 
+
+asylum_monthly <- asylum_monthly %>% 
   mutate(date = ymd(paste(asylum_monthly$year, asylum_monthly$month, "1")))
 
 asylum_status_gathered <- gather(asylum_status,
@@ -135,3 +137,7 @@ leaflet() %>%
   addProviderTiles(providers$Esri.WorldStreetMap) %>% 
   addCircles(data = geo_status_origin,
              weight = log(geo_status_origin$total))
+
+strict <- asylum_monthly %>% 
+  filter(origin == "Afghanistan",
+         dest == "United States of America")
