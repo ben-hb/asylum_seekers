@@ -267,7 +267,8 @@ navbarMenu("Application Maps",
                                     selectInput("year_origin",
                                                 "Year:",
                                                 choices = 2000:2017,
-                                                selected = 2014)
+                                                selected = 2014),
+                                    htmlOutput("originmapDescription")
                                   ),
                                   mainPanel(
                                     leafletOutput("originMap")
@@ -281,7 +282,8 @@ navbarMenu("Application Maps",
                                     selectInput("year_dest",
                                                 "Year:",
                                                 choices = 2000:2017,
-                                                selected = 2014)
+                                                selected = 2014),
+                                    htmlOutput("destmapDescription")
                                   ),
                                   mainPanel(
                                     leafletOutput("destMap")
@@ -325,7 +327,7 @@ I can be reached at <a href='benjaminhoffnerbrodsky@college.harvard.edu'>benjami
   })
 #--------------------------------------------
    output$destTitle <- renderText({
-     paste("Acceptance and Rejection of Asylum Applicants by ", input$dest)
+     paste("Asylum Applicantion Decisions Issued by ", input$dest)
    }) 
 #--------------------------------------------
    output$destPlot <- renderPlot({
@@ -352,6 +354,14 @@ I can be reached at <a href='benjaminhoffnerbrodsky@college.harvard.edu'>benjami
    output$originmapTitle <- renderText({
      paste("Number of Individuals Applying for Asylum in ", input$year_origin)
    })
+#--------------------------------------------
+  output$originmapDescription <- renderText({
+    HTML("<p><b>Instructions</b></br></p>
+         <p>Click on a country's circle to see how many people are applying for asylum in the country.</br></p>
+         <p>The size of each circle represents the square root of the number of individuals applying to enter the country.</br></p>
+         <p>There is a minimum dot size, so even a country with zero asylum seekers applying will still have a circle.</br></p>
+         ")
+  })
 #--------------------------------------------
    output$originMap <- renderLeaflet({
      status_origin <- asylum_status %>% 
@@ -393,6 +403,14 @@ I can be reached at <a href='benjaminhoffnerbrodsky@college.harvard.edu'>benjami
    output$destmapTitle <- renderText({
      paste("Asylum Seekers Entering each Country in ", input$year_dest)
    })
+#--------------------------------------------
+  output$destmapDescription <- renderText({
+    HTML("<p><b>Instructions</b></br></p>
+         <p>Click on a country's circle to see how many people are entering the country.</br></p>
+         <p>The size of each circle represents the square root of the number of individuals entering the country.</br></p>
+         <p>There is a minimum dot size, so even a country with zero asylum seekers entering will still have a circle.</br></p>
+         ")
+  })
 #--------------------------------------------
    output$destMap <- renderLeaflet({
      status_dest <- asylum_status %>% 
