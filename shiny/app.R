@@ -327,7 +327,7 @@ I can be reached at <a href='benjaminhoffnerbrodsky@college.harvard.edu'>benjami
   })
 #--------------------------------------------
    output$destTitle <- renderText({
-     paste("Asylum Applicantion Decisions Issued by ", input$dest)
+     paste("Asylum Application Decisions Issued by ", input$dest)
    }) 
 #--------------------------------------------
    output$destPlot <- renderPlot({
@@ -417,12 +417,18 @@ I can be reached at <a href='benjaminhoffnerbrodsky@college.harvard.edu'>benjami
        filter(year == input$year_dest) %>% 
        group_by(dest) %>% 
        summarize(total = sum(recognized, na.rm = TRUE))
+
+# The join now works effortlessly because of the recoding done above
      
      geo_status_dest <- status_dest %>% 
        left_join(all_capitals,
                  by = c("dest" = "country")) 
      
      leaflet() %>% 
+       
+# The Esri street map tile integrates seamlessly with Leaflet and is both
+# intuitive and not overly visually imposing
+       
        addProviderTiles(providers$Esri.WorldStreetMap) %>% 
        addCircleMarkers(data = geo_status_dest,
                         
