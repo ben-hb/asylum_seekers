@@ -177,6 +177,10 @@ ui <- shinyUI(
                 id = "tutorialModal",
                 title = "Welcome to the Asylum Applicant Visualization Tool",
                 trigger = "",
+                img(src = "unhcr_logo.jpg",
+                    style = "display: block; margin-left: auto; margin-right: auto;",
+                    height = "120",
+                    width = "120"),
                 htmlOutput("tutorial")
               ),
               titlePanel(
