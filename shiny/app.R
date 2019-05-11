@@ -141,8 +141,6 @@ asylum_status_gathered$decision <- factor(asylum_status_gathered$decision,
                                           levels = c("rejected",
                                                      "recognized"))
 #--------------------------------------------
-
-
 # Get Capital City Coordinates
 #--------------------------------------------
 
@@ -179,7 +177,7 @@ ui <- shinyUI(
                 id = "tutorialModal",
                 title = "Welcome to the Asylum Applicant Visualization Tool",
                 trigger = "",
-                textOutput("tutorial")
+                htmlOutput("tutorial")
               ),
               titlePanel(
        textOutput("destTitle")
@@ -198,22 +196,6 @@ ui <- shinyUI(
                             )
               )
      ),
-#--------------------------------------------
-      # tabPanel("Acceptances",
-      #          sidebarLayout(position = "right",
-      #                        sidebarPanel(
-      #                          selectInput("dest_accept",
-      #                                      "Destination Country:",
-      #                                      choices = sort(unique(asylum_monthly$dest)),
-      #                                      selected = "United States of America"),
-      #                          selectInput("origin_accept",
-      #                                      "Origin Country:",
-      #                                      choices = sort(unique(asylum_monthly$origin)),
-      #                                      selected = "Afghanistan")
-      #                        ),
-      #                        mainPanel(
-      #                          plotOutput("acceptancePlot")
-      #                        ))),
 navbarMenu("Application Maps",
            tabPanel("Origin",
                     titlePanel(
@@ -242,7 +224,8 @@ navbarMenu("Application Maps",
                                   ),
                                   mainPanel(
                                     leafletOutput("destMap")
-                                  ))))
+                                  )))),
+tabPanel("About")
 #--------------------------------------------
 
    )
@@ -255,13 +238,22 @@ navbarMenu("Application Maps",
 #--------------------------------------------
 #--------------------------------------------
 
+
 server <- function(input, output, session) {
   toggleModal(session, "tutorialModal", toggle = "open")
   
   output$tutorial <- renderText({
-    "In theory, political asylum is designed to function as a way to seek refuge from oppressive governments by moving to more welcoming governments. In reality, applicants often are challenged to find a country willing to accpet them. This tool is designed to shine light upon the sources of asylum applicants and the countries they choose to go to, and how easy that process is. You'll find graphics that show how likely governments are to accept asylum applicants, where asylum applicants tend to come from, and where they tend to go. All of the data is sourced from the UN High Commissioner on Refugees, a big thanks to their team for curating this data and making it publicly accessible. For the maps, size of dot correlates with number of applicants on a log scale. Labels with numbers of applicants for each country will be added shortly. 
+    HTML("<p><b>Introduction</b></br>
+In theory, political asylum is designed to function as a way to seek refuge from oppressive governments by moving to more welcoming governments. 
+In reality, applicants often are challenged to find a country willing to accept them.</br></p> 
+<p>This tool is designed to shine light upon the sources of asylum applicants and the countries they choose to go to, and how easy that process is. 
+You'll find graphics that show how likely governments are to accept asylum applicants, where asylum applicants tend to come from, and where they tend to go.</br></p> 
+All of the data is sourced from the UN High Commissioner on Refugees, a big thanks to their team for curating this data and making it publicly accessible.</br> 
+For the maps, size of dot correlates with number of applicants on a log scale. 
+Labels with numbers of applicants for each country will be added shortly. 
     
     For those interested in the technical end of this program, you can check out the code here: https://github.com/ben-hb/asylum_seekers"
+    )
   })
 #--------------------------------------------
    output$destTitle <- renderText({
@@ -310,8 +302,17 @@ server <- function(input, output, session) {
      
      leaflet() %>% 
        addProviderTiles(providers$Esri.WorldStreetMap) %>% 
-       addCircles(data = geo_status_origin,
-                  weight = log(geo_status_origin$total))
+       addCircleMarkers(data = geo_status_origin,
+                  weight = sqrt(geo_status_origin$total)/10,
+                  popup = paste0("<b>Country: </b>",
+                                 geo_status_origin$origin,
+                                 "</br>",
+                                 "<b>Number of Asylum Seekers Emmigrating: </b>",
+                                 formatC(geo_status_origin$total,
+                                         format = "f",
+                                         big.mark = ",",
+                                         drop0trailing = TRUE
+                                 )))
    })
   
 
@@ -332,8 +333,16 @@ server <- function(input, output, session) {
      
      leaflet() %>% 
        addProviderTiles(providers$Esri.WorldStreetMap) %>% 
-       addCircles(data = geo_status_dest,
-                  weight = log(geo_status_dest$total))
+       addCircleMarkers(data = geo_status_dest,
+                  weight = sqrt(geo_status_dest$total)/10,
+                  popup = paste0("<b>Country: </b>",
+                                 geo_status_dest$dest,
+                                 "</br>",
+                                 "<b>Number of Asylum Seekers Immigrating: </b>",
+                                 formatC(geo_status_dest$total,
+                                         format = "f",
+                                         big.mark = ",",
+                                         drop0trailing = TRUE)))
    })
 }
 
