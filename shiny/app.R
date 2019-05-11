@@ -252,6 +252,11 @@ ui <- shinyUI(
                             )
               )
      ),
+
+# I opt to use a drop-down menu, rather than having each map as a separate tab,
+# to avoid reiterating the geospatial name in the title and to easily
+# communicate to readers the relationship between the two tabs
+
 navbarMenu("Application Maps",
            tabPanel("Origin",
                     titlePanel(
@@ -280,28 +285,13 @@ navbarMenu("Application Maps",
                                   ),
                                   mainPanel(
                                     leafletOutput("destMap")
-                                  )))),
-tabPanel("Acceptance Rates",
-         sidebarLayout(position = "right",
-           sidebarPanel(
-             selectInput("dest_acc",
-                         "Receiving Country: ",
-                         choices = sort(unique(asylum_status$dest)),
-                         selected = "United States of America"),
-             selectInput("origin_acc",
-                         "Origin Country: ",
-                         choices = sort(unique(asylum_status$dest)),
-                         selected = "Syria")
-           ),
-           mainPanel(
-             plotOutput("rankPlot")
-           )
-         ))
+                                  ))))
+         )
 #--------------------------------------------
 
    )
    
-)
+
 
 #--------------------------------------------
 #--------------------------------------------
@@ -321,13 +311,16 @@ server <- function(input, output, session) {
     HTML("<p><b>Introduction</b></br>
 In theory, political asylum is designed to function as a way to seek refuge from oppressive governments by moving to more welcoming governments. 
 In reality, applicants often are challenged to find a country willing to accept them.</br></p> 
-<p>This tool is designed to shine light upon the sources of asylum applicants and the countries they choose to go to, and how easy that process is. 
+<p>This tool is designed to shine light upon the sources of asylum applicants and the countries they choose to go to, and how easy that process is.</br> 
 You'll find graphics that show how likely governments are to accept asylum applicants, where asylum applicants tend to come from, and where they tend to go.</br></p> 
-All of the data is sourced from the UN High Commissioner on Refugees, a big thanks to their team for curating this data and making it publicly accessible.</br> 
-For the maps, size of dot correlates with number of applicants on a log scale. 
-Labels with numbers of applicants for each country will be added shortly. 
-    
-    For those interested in the technical end of this program, you can check out the code here: https://github.com/ben-hb/asylum_seekers"
+<p><b>Source</b></br>
+All of the data is sourced from the <a href='https://www.unhcr.org/'>UN High Commissioner on Refugees</a></br> 
+A big thanks to the UNHCR team for curating this data and making it publicly accessible!</br> 
+</p>
+<p><b>Technical</b></br>
+You can check out the code for this site at my <a href='https://github.com/ben-hb/asylum_seekers'>GitHub</a>.</br></p>
+<p><b>Designed by <a href='https://www.linkedin.com/in/benhoffner/'>Benjamin Hoffner-Brodsky</a></br>
+I can be reached at <a href='benjaminhoffnerbrodsky@college.harvard.edu'>benjaminhoffnerbrodsky@college.harvard.edu</a></p>"
     )
   })
 #--------------------------------------------
@@ -357,7 +350,7 @@ Labels with numbers of applicants for each country will be added shortly.
    })
 #--------------------------------------------
    output$originmapTitle <- renderText({
-     paste("Asylum Applicants Applying to Leave from each Country in", input$year_origin)
+     paste("Number of Individuals Applying for Asylum in ", input$year_origin)
    })
 #--------------------------------------------
    output$originMap <- renderLeaflet({
@@ -373,7 +366,17 @@ Labels with numbers of applicants for each country will be added shortly.
      leaflet() %>% 
        addProviderTiles(providers$Esri.WorldStreetMap) %>% 
        addCircleMarkers(data = geo_status_origin,
-                  weight = sqrt(geo_status_origin$total)/10,
+
+# Here I'm setting a minimum size for each dot, such that for countries with a
+# very small number of seekers the dot is still large enough to see and click on
+
+                  radius = ifelse(geo_status_origin$total > 900, sqrt(geo_status_origin$total)/15, 2),
+
+# Having a minimal stroke weight is essential to make sure that countries will
+# smaller totals don't appear to have a higher opacity because stroke is a
+# higher percentage of the overall volume
+
+                  weight = 1,
                   popup = paste0("<b>Country: </b>",
                                  geo_status_origin$origin,
                                  "</br>",
@@ -388,14 +391,14 @@ Labels with numbers of applicants for each country will be added shortly.
 
 #--------------------------------------------
    output$destmapTitle <- renderText({
-     paste("Asylum Applicants Entering Trying to Enter each Country in ", input$year_dest)
+     paste("Asylum Seekers Entering each Country in ", input$year_dest)
    })
 #--------------------------------------------
    output$destMap <- renderLeaflet({
      status_dest <- asylum_status %>% 
        filter(year == input$year_dest) %>% 
        group_by(dest) %>% 
-       summarize(total = sum(applied_during_year, na.rm = TRUE))
+       summarize(total = sum(recognized, na.rm = TRUE))
      
      geo_status_dest <- status_dest %>% 
        left_join(all_capitals,
@@ -404,7 +407,12 @@ Labels with numbers of applicants for each country will be added shortly.
      leaflet() %>% 
        addProviderTiles(providers$Esri.WorldStreetMap) %>% 
        addCircleMarkers(data = geo_status_dest,
-                  weight = sqrt(geo_status_dest$total)/10,
+                        
+# Here I'm setting a minimum size for each dot, such that for countries with a
+# very small number of seekers the dot is still large enough to see and click on
+
+                  radius = ifelse(geo_status_dest$total > 400, sqrt(geo_status_dest$total)/10, 2),
+                  weight = 1,
                   popup = paste0("<b>Country: </b>",
                                  geo_status_dest$dest,
                                  "</br>",
