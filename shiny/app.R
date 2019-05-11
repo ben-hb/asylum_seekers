@@ -42,7 +42,16 @@ asylum_status <- read_csv("asylum_seekers.csv",
          "recognized" = "statistics_filter_decisions_recognized") %>% 
   filter(!is.na(origin)) %>% 
   filter(!is.na(dest),
+
+# Neither of these is a formal country and, therefore, won't be considered
+
          !origin %in% c("Curaçao", "Holy See (the)"))
+
+# A lot of work has to be done to recode the dest and origin names. There are
+# two problems with the intial naming conventions: First, they often times take
+# a form that isn't intuitive, such as "Serbia and Kosovo (S/RES/1244 (1999))".
+# Second, they do not match up with the data that I use below to add geospatial
+# information. Recoding both allows for the two sets to match
 
 asylum_status$origin  <- fct_recode(asylum_status$origin, 
                                     Bolivia = "Bolivia (Plurinational State of)",
@@ -69,6 +78,9 @@ asylum_status$origin  <- fct_recode(asylum_status$origin,
                                     Tanzania = "United Rep. of Tanzania",
                                     Venezuela = "Venezuela (Bolivarian Republic of)",
                                     Vietnam = "Viet Nam",
+                                    
+# Neither of these are countries so I remove them 
+
                                     NULL = "Stateless",
                                     NULL = "Various/Unknown",
                                     `Democratic Republic of the Congo` = "Congo",
@@ -130,12 +142,19 @@ asylum_monthly <- asylum_monthly %>%
 
 # Bar Plot Processing
 #--------------------------------------------
+
+# The data is not currently in a 'tidy' format. To allow for easy processing for
+# the bar plot I need to ensure that each row is an observation
+
 asylum_status_gathered <- gather(asylum_status,
                                  "recognized",
                                  "rejected",
                                  key = "decision",
                                  value = "value"
 )
+
+# Formatting the decisions as factors will allow me to determine the bar plot
+# fill by decision which would be difficult to do if they were still strings
 
 asylum_status_gathered$decision <- factor(asylum_status_gathered$decision,
                                           levels = c("rejected",
@@ -144,7 +163,17 @@ asylum_status_gathered$decision <- factor(asylum_status_gathered$decision,
 # Get Capital City Coordinates
 #--------------------------------------------
 
+# World Cities is a dataset which contains latitude and longitude for cities
+# around the world. Since the data from the UNHCR only provides country-level
+# data, I will be using capital cities of countries as a geospatial proxy for
+# the actual location that individuals are emigrating from or too
+
 data(world.cities)
+
+# The world cities dataset suffers from the same problem of unintuitive names
+# that the UNHCR dataset struggles with. While there are various ways to deal
+# with this issue, I choose to recode both datasets such that they each converge
+# upon the intuitive name conventions that I'm aiming for
 
 world.cities$country.etc <- fct_recode(world.cities$country.etc,
                                        `United Kingdom` = "UK",
@@ -153,6 +182,11 @@ world.cities$country.etc <- fct_recode(world.cities$country.etc,
                                        `North Korea` = "Korea North",
                                        `United States of America` = "USA",
                                        `Saint Vincent and the Grenadines` = "Saint Vincent and The Grenadines")
+
+# There were a couple of instances in which the capital city of a
+# country/territory wasn't recorded as a capital city. Rather than converting
+# them to capital cities before filtering, I opt to explicitly add them as
+# exceptions to the capital city filter
 
 all_capitals <- world.cities %>% 
   filter(capital == 1 | name == "Suva" | name == "Ram Allah") %>% 
@@ -169,15 +203,29 @@ all_capitals <- world.cities %>%
 
 ui <- shinyUI(
   navbarPage("Asylum Applicants",
+             
+# I choose to take a generally minimalist approach to the style of the site,
+# intentionally avoiding standout background colors so that plots do not create
+# substantial contrast. Flatly is a great theme for this purposes
+
              theme = shinytheme("flatly"),
              position = "static-top",
 #--------------------------------------------
      tabPanel("Decisions",
+
+# shinyBS allows for more interactive elements; here I choose to use a pop-up as
+# a way of introducing users to the functionality of the website and ensuring
+# theat due credit is given to the UNHCR for providing the data, whereas an
+# about page that conveys the same information may never be read
+
               bsModal(
                 id = "tutorialModal",
                 title = "Welcome to the Asylum Applicant Visualization Tool",
                 trigger = "",
                 img(src = "unhcr_logo.jpg",
+                    
+#Style formatting borrowed from Gabe Walker's GitHub
+    
                     style = "display: block; margin-left: auto; margin-right: auto;",
                     height = "120",
                     width = "120"),
@@ -191,6 +239,10 @@ ui <- shinyUI(
                             sidebarPanel(
                               selectInput("dest",
                                           "Destination Country:",
+                                          
+# Calling unique on the destination list within the asylum dataframe generates a
+# list of the names of every contry in the dataset
+
                                           choices = sort(unique(asylum_status$dest)),
                                           selected = "Argentina")
                             ),
@@ -229,7 +281,22 @@ navbarMenu("Application Maps",
                                   mainPanel(
                                     leafletOutput("destMap")
                                   )))),
-tabPanel("About")
+tabPanel("Acceptance Rates",
+         sidebarLayout(position = "right",
+           sidebarPanel(
+             selectInput("dest_acc",
+                         "Receiving Country: ",
+                         choices = sort(unique(asylum_status$dest)),
+                         selected = "United States of America"),
+             selectInput("origin_acc",
+                         "Origin Country: ",
+                         choices = sort(unique(asylum_status$dest)),
+                         selected = "Syria")
+           ),
+           mainPanel(
+             plotOutput("rankPlot")
+           )
+         ))
 #--------------------------------------------
 
    )
@@ -244,7 +311,11 @@ tabPanel("About")
 
 
 server <- function(input, output, session) {
+  
   toggleModal(session, "tutorialModal", toggle = "open")
+  
+# Using html formatting functionality allows for a greater degree of
+# customization over the text display than using the base r text formatting
   
   output$tutorial <- renderText({
     HTML("<p><b>Introduction</b></br>
@@ -269,6 +340,10 @@ Labels with numbers of applicants for each country will be added shortly.
         filter(dest == input$dest)
       
       ggplot(dest_status) +
+
+# The fill element here is really the core of the plot - without it none of the
+# takeaways of the chart are accessible
+        
         geom_col(aes(x = year, y = value, fill = factor(decision))) +
         labs(
           y = "Number of Rejections",
@@ -280,15 +355,6 @@ Labels with numbers of applicants for each country will be added shortly.
                             breaks=c("rejected", "recognized"),
                             labels=c("Rejected", "Recognized"))
    })
-#--------------------------------------------
-  output$acceptancePlot <- renderPlot({
-    asylum_monthly_accept <- asylum_monthly %>% 
-      filter(origin == input$originaccept,
-             dest == input$destaccept)
-    
-    ggplot(asylum_monthly_accept) +
-      geom_col(aes(x = date, y = value))
-  })
 #--------------------------------------------
    output$originmapTitle <- renderText({
      paste("Asylum Applicants Applying to Leave from each Country in", input$year_origin)
